@@ -39,11 +39,15 @@ const KIDS_ADVANCE = 4.2;
 const ADULT_ADVANCE = 1.6;
 
 function cpuAdvance(oddsNum: number, mode: Mode): number {
-  const base = 0.16 / Math.sqrt(oddsNum);
-  const burst = Math.random() < 0.25 ? Math.random() * 0.5 : 0;
-  const pause = Math.random() < 0.12 ? -0.04 : 0;
+  // Compressed base speed: favorites still faster but race stays close.
+  // Range: 4-1 horse → ~0.068, 50-1 horse → ~0.056 (only ~20% spread before variance)
+  const base = 0.050 + 0.030 / Math.sqrt(oddsNum);
+  // Big random bursts make any horse capable of surging
+  const burst = Math.random() < 0.28 ? Math.random() * 1.1 : 0;
+  // Occasional stumble keeps favorites honest
+  const stumble = Math.random() < 0.10 ? -0.12 : 0;
   const speed = mode === "kids" ? 0.22 : mode === "adult" ? 0.72 : 1.0;
-  return Math.max(0, (base + burst + pause) * speed);
+  return Math.max(0, (base + burst + stumble) * speed);
 }
 
 export function RaceGame({ horses, myPick, myName }: Props) {
@@ -276,6 +280,21 @@ export function RaceGame({ horses, myPick, myName }: Props) {
                 }}
               >
                 <div className="w-1 h-full flex-shrink-0" style={{ backgroundColor: hs.horse.postColor }} />
+                {/* Horse name label — left-aligned background text */}
+                <span
+                  className="absolute font-arcade text-white pointer-events-none select-none"
+                  style={{
+                    left: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    fontSize: "clamp(9px, 1.8vw, 14px)",
+                    opacity: hs.isMyHorse ? 0.7 : 0.28,
+                    letterSpacing: "0.05em",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {hs.horse.name.toUpperCase()}
+                </span>
                 {/* Moving horse */}
                 <div
                   className="absolute"

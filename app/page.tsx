@@ -1,9 +1,26 @@
 import { cookies } from "next/headers";
 import { setName } from "./actions";
+import { hgetall } from "@/lib/kv";
+import { SessionPickers } from "@/components/SessionPickers";
 
 export default async function Home() {
   const cookieStore = await cookies();
   const existingName = cookieStore.get("derby_name")?.value?.trim() ?? null;
+
+  // Load session pickers + their picks
+  let sessionPickers: { name: string; pick: string | null }[] = [];
+  try {
+    const session: string[] = JSON.parse(cookieStore.get("derby_session")?.value ?? "[]");
+    if (session.length > 0) {
+      const allPicks = await hgetall("picks");
+      sessionPickers = session.map((name) => ({
+        name,
+        pick: allPicks?.[name] ?? null,
+      }));
+    }
+  } catch {
+    sessionPickers = [];
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative">
@@ -17,39 +34,31 @@ export default async function Home() {
           2026 · PICK YOUR WINNER
         </p>
 
-        {/* Welcome back section */}
-        {existingName && (
-          <div className="mb-6 border-2 border-derby-green bg-[#0a1a0a] p-4 text-left">
-            <p className="font-arcade text-derby-green text-xl mb-3">
-              Welcome back, {existingName}!
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              <a
-                href="/results"
-                className="border-2 border-derby-yellow bg-derby-navy text-derby-yellow font-pixel text-[9px] px-3 py-2 pixel-shadow inline-block"
-              >
-                SEE PICKS →
-              </a>
-              <a
-                href="/pick"
-                className="border-2 border-derby-yellow bg-derby-red text-white font-pixel text-[9px] px-3 py-2 pixel-shadow-yellow inline-block"
-              >
-                CHANGE MY PICK →
-              </a>
-              <a
-                href="/race"
-                className="border-2 border-derby-green bg-[#0a1a0a] text-derby-green font-pixel text-[9px] px-3 py-2 pixel-shadow inline-block"
-              >
-                🏁 RACE GAME →
-              </a>
-            </div>
+        {/* Session pickers from this device */}
+        <SessionPickers pickers={sessionPickers} />
+
+        {/* Quick nav if already picked */}
+        {existingName && sessionPickers.find(p => p.name === existingName)?.pick && (
+          <div className="mb-6 flex gap-2 flex-wrap justify-center">
+            <a
+              href="/results"
+              className="border-2 border-derby-yellow bg-derby-navy text-derby-yellow font-pixel text-[9px] px-3 py-2 pixel-shadow inline-block"
+            >
+              SEE ALL PICKS →
+            </a>
+            <a
+              href="/race"
+              className="border-2 border-derby-green bg-[#0a1a0a] text-derby-green font-pixel text-[9px] px-3 py-2 pixel-shadow inline-block"
+            >
+              🏁 RACE GAME →
+            </a>
           </div>
         )}
 
         {/* Name entry form */}
         <form action={setName} className="flex flex-col gap-4">
           <label className="font-arcade text-white text-xl text-left">
-            {existingName ? "Change your name or pick for someone else:" : "Enter your name to start:"}
+            {sessionPickers.length > 0 ? "Add another picker:" : "Enter your name to start:"}
           </label>
           <input
             name="name"
@@ -58,15 +67,14 @@ export default async function Home() {
             minLength={2}
             maxLength={30}
             placeholder="Your name..."
-            defaultValue={existingName ?? ""}
-            autoFocus={!existingName}
+            autoFocus
             className="border-4 border-white bg-derby-navy text-white font-arcade text-2xl px-4 py-3 placeholder-gray-500 focus:outline-none focus:border-derby-yellow pixel-shadow w-full"
           />
           <button
             type="submit"
             className="border-4 border-derby-yellow bg-derby-red text-white font-pixel text-xs py-4 pixel-shadow-yellow pixel-btn mt-2 w-full"
           >
-            {existingName ? "GO →" : "LET'S RACE →"}
+            {sessionPickers.length > 0 ? "ADD PICKER →" : "LET'S RACE →"}
           </button>
         </form>
       </div>
