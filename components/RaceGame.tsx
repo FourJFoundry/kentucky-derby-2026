@@ -35,7 +35,7 @@ const KIDS_MAX_LIT = 1;
 const ADULT_MAX_LIT = 3;
 
 // How much the player's horse advances per button tap
-const KIDS_ADVANCE = 4.2;
+const KIDS_ADVANCE = 2.1;
 const ADULT_ADVANCE = 1.6;
 
 function cpuAdvance(oddsNum: number, mode: Mode): number {
@@ -298,7 +298,7 @@ export function RaceGame({ horses, myPick, myName }: Props) {
                 {/* Moving horse */}
                 <div
                   className="absolute"
-                  style={{ left: `calc(${hs.position}% - 14px)`, top: "50%", transform: "translateY(-50%)" }}
+                  style={{ left: `calc(${hs.position}% - 14px)`, top: "50%", transform: "translateY(-50%) scaleX(-1)" }}
                 >
                   <span
                     className="text-xl leading-none"
