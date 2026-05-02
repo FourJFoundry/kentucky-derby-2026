@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Horse } from "@/lib/horses";
 import { PostBadge } from "./PostBadge";
 
@@ -9,25 +9,41 @@ type GameState = "idle" | "countdown" | "racing" | "finished";
 
 type HorseState = {
   horse: Horse;
-  position: number; // 0–100 percent
+  position: number; // 0–100
   isMyHorse: boolean;
 };
 
-type Props = {
-  horses: Horse[];
-  myPick: string;
-  myName: string;
-};
+type Props = { horses: Horse[]; myPick: string; myName: string };
 
 const FINISH = 92;
-const LANE_HEIGHT = 48;
+const LANE_H = 30;
 
-// Odds-weighted random advance per tick for passive/adult CPU horses
-function passiveAdvance(oddsNum: number): number {
-  const base = 0.18 / Math.sqrt(oddsNum); // favorites advance more per tick
-  const burst = Math.random() < 0.25 ? Math.random() * 0.6 : 0;
-  const pause = Math.random() < 0.15 ? -0.05 : 0;
-  return Math.max(0, base + burst + pause);
+// Kids: 6 buttons (2×3), Adult: 12 buttons (3×4)
+const KIDS_BUTTONS = 6;
+const ADULT_BUTTONS = 12;
+
+// How long a lit button stays visible (ms)
+const KIDS_WINDOW = 1100;
+const ADULT_WINDOW = 520;
+
+// How often a new button lights up (ms)
+const KIDS_SPAWN = 750;
+const ADULT_SPAWN = 290;
+
+// How many buttons can be lit simultaneously
+const KIDS_MAX_LIT = 1;
+const ADULT_MAX_LIT = 3;
+
+// How much the player's horse advances per button tap
+const KIDS_ADVANCE = 4.2;
+const ADULT_ADVANCE = 1.6;
+
+function cpuAdvance(oddsNum: number, mode: Mode): number {
+  const base = 0.16 / Math.sqrt(oddsNum);
+  const burst = Math.random() < 0.25 ? Math.random() * 0.5 : 0;
+  const pause = Math.random() < 0.12 ? -0.04 : 0;
+  const speed = mode === "kids" ? 0.22 : mode === "adult" ? 0.72 : 1.0;
+  return Math.max(0, (base + burst + pause) * speed);
 }
 
 export function RaceGame({ horses, myPick, myName }: Props) {
@@ -36,152 +52,139 @@ export function RaceGame({ horses, myPick, myName }: Props) {
   const [countdown, setCountdown] = useState(3);
   const [horseStates, setHorseStates] = useState<HorseState[]>([]);
   const [winner, setWinner] = useState<HorseState | null>(null);
-  const [targets, setTargets] = useState<{ id: number; x: number; y: number }[]>([]);
-  const [score, setScore] = useState(0);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const targetRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const targetIdRef = useRef(0);
+  const [litButtons, setLitButtons] = useState<Set<number>>(new Set());
+  const [hits, setHits] = useState(0);
 
-  function initHorses() {
-    return horses.map((h) => ({
-      horse: h,
-      position: 0,
-      isMyHorse: h.name === myPick,
-    }));
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const spawnRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const buttonCount = mode === "adult" ? ADULT_BUTTONS : KIDS_BUTTONS;
+
+  function clearAll() {
+    if (tickRef.current) clearInterval(tickRef.current);
+    if (spawnRef.current) clearInterval(spawnRef.current);
+    timeoutRefs.current.forEach(clearTimeout);
+    timeoutRefs.current = [];
   }
 
-  function startGame(selectedMode: Mode) {
-    setMode(selectedMode);
-    setHorseStates(initHorses());
+  function startGame(m: Mode) {
+    clearAll();
+    setMode(m);
+    setHorseStates(horses.map((h) => ({ horse: h, position: 0, isMyHorse: h.name === myPick })));
     setWinner(null);
-    setScore(0);
-    setTargets([]);
+    setHits(0);
+    setLitButtons(new Set());
     setGameState("countdown");
     setCountdown(3);
   }
 
   function resetGame() {
-    if (tickRef.current) clearInterval(tickRef.current);
-    if (targetRef.current) clearInterval(targetRef.current);
+    clearAll();
     setGameState("idle");
     setMode("menu");
     setHorseStates([]);
     setWinner(null);
-    setTargets([]);
-    setScore(0);
+    setLitButtons(new Set());
+    setHits(0);
   }
 
-  // Countdown effect
+  // Countdown
   useEffect(() => {
     if (gameState !== "countdown") return;
-    if (countdown <= 0) {
-      setGameState("racing");
-      return;
-    }
+    if (countdown <= 0) { setGameState("racing"); return; }
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [gameState, countdown]);
 
-  // Race tick
+  // Race tick — CPU horses
   useEffect(() => {
     if (gameState !== "racing") return;
-
     tickRef.current = setInterval(() => {
       setHorseStates((prev) => {
-        const next = prev.map((hs) => {
-          let advance = 0;
-          if (mode === "passive") {
-            advance = passiveAdvance(hs.horse.oddsNum);
-          } else if (mode === "kids") {
-            // CPU horses advance slowly
-            if (!hs.isMyHorse) advance = passiveAdvance(hs.horse.oddsNum) * 0.35;
-          } else if (mode === "adult") {
-            // CPU horses advance at normal speed, player advances via taps
-            if (!hs.isMyHorse) advance = passiveAdvance(hs.horse.oddsNum) * 0.9;
-          }
-          return { ...hs, position: Math.min(FINISH + 2, hs.position + advance) };
-        });
-
-        const finished = next.find((hs) => hs.position >= FINISH);
-        if (finished) {
-          clearInterval(tickRef.current!);
-          if (targetRef.current) clearInterval(targetRef.current);
-          setWinner(finished);
+        const next = prev.map((hs) => ({
+          ...hs,
+          position: Math.min(
+            FINISH + 2,
+            hs.position + (hs.isMyHorse && mode !== "passive" ? 0 : cpuAdvance(hs.horse.oddsNum, mode))
+          ),
+        }));
+        const fin = next.find((hs) => hs.position >= FINISH);
+        if (fin) {
+          clearAll();
+          setWinner(fin);
           setGameState("finished");
-          setTargets([]);
+          setLitButtons(new Set());
         }
         return next;
       });
     }, 80);
-
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-    };
+    return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, [gameState, mode]);
 
-  // Adult mode: spawn tap targets
+  // Auto-scroll track to keep player's horse visible
   useEffect(() => {
-    if (gameState !== "racing" || mode !== "adult") return;
+    if (gameState !== "racing" || mode === "passive") return;
+    const myIdx = horseStates.findIndex((hs) => hs.isMyHorse);
+    if (myIdx >= 0 && trackRef.current) {
+      const targetScroll = myIdx * LANE_H - 80;
+      trackRef.current.scrollTop = Math.max(0, targetScroll);
+    }
+  }, [horseStates, gameState, mode]);
 
-    targetRef.current = setInterval(() => {
-      const id = targetIdRef.current++;
-      setTargets((prev) => [
-        ...prev.slice(-6), // max 6 targets on screen
-        {
-          id,
-          x: 5 + Math.random() * 60,
-          y: 10 + Math.random() * 75,
-        },
-      ]);
-      // Auto-remove after 900ms
-      setTimeout(() => {
-        setTargets((prev) => prev.filter((t) => t.id !== id));
-      }, 900);
-    }, 400);
+  // Spawn lit buttons for interactive modes
+  useEffect(() => {
+    if (gameState !== "racing" || mode === "passive") return;
+    const maxLit = mode === "kids" ? KIDS_MAX_LIT : ADULT_MAX_LIT;
+    const window_ms = mode === "kids" ? KIDS_WINDOW : ADULT_WINDOW;
+    const count = mode === "kids" ? KIDS_BUTTONS : ADULT_BUTTONS;
 
-    return () => {
-      if (targetRef.current) clearInterval(targetRef.current);
-    };
+    spawnRef.current = setInterval(() => {
+      setLitButtons((prev) => {
+        if (prev.size >= maxLit) return prev;
+        // pick a random unlit button
+        const unlit = Array.from({ length: count }, (_, i) => i).filter((i) => !prev.has(i));
+        if (unlit.length === 0) return prev;
+        const pick = unlit[Math.floor(Math.random() * unlit.length)];
+        const next = new Set(prev);
+        next.add(pick);
+        // auto-extinguish after window
+        const t = setTimeout(() => {
+          setLitButtons((s) => { const n = new Set(s); n.delete(pick); return n; });
+        }, window_ms);
+        timeoutRefs.current.push(t);
+        return next;
+      });
+    }, mode === "kids" ? KIDS_SPAWN : ADULT_SPAWN);
+
+    return () => { if (spawnRef.current) clearInterval(spawnRef.current); };
   }, [gameState, mode]);
 
-  // Kids mode: advance on big button tap
-  function handleKickButton() {
-    if (gameState !== "racing" || mode !== "kids") return;
+  function handleButtonTap(idx: number) {
+    if (gameState !== "racing" || mode === "passive") return;
+    if (!litButtons.has(idx)) return;
+    setLitButtons((prev) => { const n = new Set(prev); n.delete(idx); return n; });
+    setHits((h) => h + 1);
+    const advance = mode === "kids" ? KIDS_ADVANCE : ADULT_ADVANCE;
     setHorseStates((prev) =>
       prev.map((hs) =>
         hs.isMyHorse
-          ? { ...hs, position: Math.min(FINISH + 2, hs.position + 4 + Math.random() * 2) }
+          ? { ...hs, position: Math.min(FINISH + 2, hs.position + advance + Math.random() * 0.5) }
           : hs
       )
     );
   }
 
-  // Adult mode: tap a target
-  const handleTargetTap = useCallback(
-    (id: number) => {
-      if (gameState !== "racing" || mode !== "adult") return;
-      setTargets((prev) => prev.filter((t) => t.id !== id));
-      setScore((s) => s + 1);
-      setHorseStates((prev) =>
-        prev.map((hs) =>
-          hs.isMyHorse
-            ? { ...hs, position: Math.min(FINISH + 2, hs.position + 1.8 + Math.random() * 0.8) }
-            : hs
-        )
-      );
-    },
-    [gameState, mode]
-  );
-
   const myHorseState = horseStates.find((hs) => hs.isMyHorse);
+  const cols = mode === "adult" ? 4 : 3;
+  const rows = mode === "adult" ? 3 : 2;
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <div className="text-center py-4 px-4">
-        <h1 className="font-pixel text-derby-yellow text-sm leading-8">
-          🏁 DERBY RACE GAME
-        </h1>
+      <div className="text-center py-3 px-4 flex-shrink-0">
+        <h1 className="font-pixel text-derby-yellow text-sm leading-8">🏁 DERBY RACE GAME</h1>
         <p className="font-arcade text-derby-tan text-xl">
           Your horse: <span className="text-derby-yellow">{myPick}</span> · {myName}
         </p>
@@ -189,177 +192,170 @@ export function RaceGame({ horses, myPick, myName }: Props) {
 
       {/* MODE MENU */}
       {mode === "menu" && (
-        <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4">
-          <div className="border-4 border-derby-yellow bg-[#0f0f3a] p-6 text-center pixel-shadow-yellow">
-            <p className="font-arcade text-white text-2xl mb-6">
-              Choose your race experience:
-            </p>
+        <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col gap-4 w-full">
+          <div className="border-4 border-derby-yellow bg-[#0f0f3a] p-6 pixel-shadow-yellow">
+            <p className="font-arcade text-white text-2xl mb-5 text-center">Choose your race:</p>
             <div className="flex flex-col gap-4">
               <button
                 onClick={() => startGame("passive")}
-                className="border-4 border-gray-400 bg-[#1a1a1a] text-white font-pixel text-[10px] py-4 px-6 pixel-shadow pixel-btn text-left"
+                className="border-4 border-gray-500 bg-[#1a1a1a] text-white font-pixel text-[10px] py-4 px-5 pixel-shadow pixel-btn text-left"
               >
-                <div className="font-pixel text-derby-yellow text-[10px] mb-1">📺 WATCH THE RACE</div>
-                <div className="font-arcade text-gray-300 text-lg">
-                  Sit back and watch all 20 horses race. Odds determine who wins — anything can happen!
+                <div className="text-derby-yellow mb-1">📺 WATCH THE RACE</div>
+                <div className="font-arcade text-gray-300 text-lg font-normal">
+                  Sit back and watch. Odds determine who wins — anything can happen!
                 </div>
               </button>
               <button
                 onClick={() => startGame("kids")}
-                className="border-4 border-derby-green bg-[#0a1a0a] text-white font-pixel text-[10px] py-4 px-6 pixel-shadow-green pixel-btn text-left"
+                className="border-4 border-derby-green bg-[#0a1a0a] text-white font-pixel text-[10px] py-4 px-5 pixel-shadow-green pixel-btn text-left"
               >
-                <div className="font-pixel text-derby-green text-[10px] mb-1">⭐ KIDS RACE · EASY</div>
-                <div className="font-arcade text-gray-300 text-lg">
-                  Tap the big KICK button to charge your horse forward! The other horses go slow — you've got this!
+                <div className="text-derby-green mb-1">⭐ KIDS RACE · EASY</div>
+                <div className="font-arcade text-gray-300 text-lg font-normal">
+                  Tap the glowing buttons to charge your horse! Buttons stay lit longer — nice and easy.
                 </div>
               </button>
               <button
                 onClick={() => startGame("adult")}
-                className="border-4 border-derby-red bg-[#1a0505] text-white font-pixel text-[10px] py-4 px-6 pixel-shadow pixel-btn text-left"
+                className="border-4 border-derby-red bg-[#1a0505] text-white font-pixel text-[10px] py-4 px-5 pixel-shadow pixel-btn text-left"
               >
-                <div className="font-pixel text-derby-red text-[10px] mb-1">🔥 CHAMPS RACE · HARD</div>
-                <div className="font-arcade text-gray-300 text-lg">
-                  Tap the glowing circles as fast as you can to power your horse! CPU horses don't hold back.
+                <div className="text-derby-red mb-1">🔥 CHAMPS RACE · HARD</div>
+                <div className="font-arcade text-gray-300 text-lg font-normal">
+                  More buttons, faster flashes. CPU horses don't hold back. You'll need quick reflexes!
                 </div>
               </button>
             </div>
           </div>
-          <a
-            href="/results"
-            className="font-pixel text-[9px] text-gray-500 text-center hover:text-white"
-          >
+          <a href="/results" className="font-pixel text-[9px] text-gray-500 text-center">
             ← Back to Starting Gate
           </a>
         </div>
       )}
 
-      {/* COUNTDOWN */}
+      {/* COUNTDOWN overlay */}
       {gameState === "countdown" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
           <div className="text-center">
             <p className="font-pixel text-derby-yellow text-xs mb-4">GET READY...</p>
-            <p className="font-pixel text-white text-6xl">
-              {countdown === 0 ? "GO!" : countdown}
-            </p>
+            <p className="font-pixel text-white text-6xl">{countdown === 0 ? "GO!" : countdown}</p>
           </div>
         </div>
       )}
 
-      {/* RACE TRACK */}
+      {/* RACE VIEW */}
       {(gameState === "racing" || gameState === "finished") && mode !== "menu" && (
-        <div className="relative">
-          {/* Track */}
+        <div className="flex flex-col flex-1">
+          {/* Track — scrollable, fixed height */}
           <div
-            className="relative mx-2 border-4 border-yellow-800 overflow-hidden"
-            style={{ height: `${horses.length * LANE_HEIGHT}px` }}
+            ref={trackRef}
+            className="mx-2 border-4 border-yellow-800 overflow-y-auto flex-shrink-0 relative"
+            style={{ height: `min(${horses.length * LANE_H}px, 52vh)` }}
           >
             {/* Finish line */}
             <div
-              className="absolute top-0 bottom-0 w-1 z-20"
+              className="absolute top-0 z-20 pointer-events-none"
               style={{
                 left: `${FINISH}%`,
-                background: "repeating-linear-gradient(to bottom, #fff 0px, #fff 8px, #000 8px, #000 16px)",
+                width: "4px",
+                height: `${horses.length * LANE_H}px`,
+                background: "repeating-linear-gradient(to bottom,#fff 0,#fff 6px,#000 6px,#000 12px)",
               }}
             />
 
-            {/* Horse lanes */}
             {horseStates.map((hs, i) => (
               <div
                 key={hs.horse.post}
                 className="absolute left-0 right-0 flex items-center"
                 style={{
-                  top: `${i * LANE_HEIGHT}px`,
-                  height: `${LANE_HEIGHT}px`,
+                  top: i * LANE_H,
+                  height: LANE_H,
                   background:
                     i % 2 === 0
-                      ? "linear-gradient(to bottom, #1a4a1a 0%, #2d6e2d 50%, #1a4a1a 100%)"
-                      : "linear-gradient(to bottom, #154015 0%, #267326 50%, #154015 100%)",
-                  borderBottom: "1px solid rgba(255,255,255,0.1)",
+                      ? "linear-gradient(to bottom,#1a4a1a,#2d6e2d 50%,#1a4a1a)"
+                      : "linear-gradient(to bottom,#154015,#267326 50%,#154015)",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
                 }}
               >
-                {/* Post color stripe on left */}
-                <div
-                  className="w-1.5 h-full flex-shrink-0"
-                  style={{ backgroundColor: hs.horse.postColor }}
-                />
-
+                <div className="w-1 h-full flex-shrink-0" style={{ backgroundColor: hs.horse.postColor }} />
                 {/* Moving horse */}
                 <div
-                  className="absolute flex items-center gap-1 transition-none"
-                  style={{
-                    left: `calc(${hs.position}% - 1.5rem)`,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
+                  className="absolute"
+                  style={{ left: `calc(${hs.position}% - 14px)`, top: "50%", transform: "translateY(-50%)" }}
                 >
                   <span
-                    className={[
-                      "text-2xl",
-                      hs.isMyHorse ? "filter drop-shadow-[0_0_6px_gold]" : "",
-                    ].join(" ")}
+                    className="text-xl leading-none"
+                    style={hs.isMyHorse ? { filter: "drop-shadow(0 0 5px gold) drop-shadow(0 0 10px gold)" } : {}}
                   >
                     🏇
                   </span>
                 </div>
-
-                {/* Horse label on right edge */}
-                <div className="absolute right-2 flex items-center gap-1">
+                {/* Right label */}
+                <div className="absolute right-1 flex items-center gap-1">
                   <PostBadge horse={hs.horse} size="sm" />
                   {hs.isMyHorse && (
-                    <span className="font-pixel text-[7px] text-derby-yellow">YOU</span>
+                    <span className="font-pixel text-[6px] text-derby-yellow leading-none">YOU</span>
                   )}
                 </div>
               </div>
             ))}
-
-            {/* Adult mode tap targets */}
-            {mode === "adult" &&
-              targets.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => handleTargetTap(t.id)}
-                  className="absolute z-30 w-10 h-10 rounded-full border-4 border-white bg-derby-red animate-ping-slow flex items-center justify-center font-pixel text-white text-[10px]"
-                  style={{
-                    left: `${t.x}%`,
-                    top: `${t.y}%`,
-                    transform: "translate(-50%, -50%)",
-                    animation: "pulse 0.4s ease-in-out infinite",
-                  }}
-                >
-                  ●
-                </button>
-              ))}
           </div>
 
-          {/* Kids mode kick button */}
-          {mode === "kids" && gameState === "racing" && (
-            <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-derby-navy border-t-4 border-derby-green flex justify-center">
-              <button
-                onPointerDown={handleKickButton}
-                className="border-4 border-derby-green bg-derby-green text-black font-pixel text-sm px-16 py-6 pixel-shadow-green pixel-btn active:scale-95"
-                style={{ fontSize: "clamp(12px, 4vw, 20px)" }}
+          {/* Progress bar for player's horse */}
+          {mode !== "passive" && myHorseState && gameState === "racing" && (
+            <div className="mx-2 mt-1 flex-shrink-0">
+              <div className="h-3 bg-gray-800 border-2 border-gray-600 relative">
+                <div
+                  className="h-full bg-derby-yellow transition-all duration-100"
+                  style={{ width: `${Math.min(100, (myHorseState.position / FINISH) * 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between px-1">
+                <span className="font-pixel text-[7px] text-derby-tan">YOUR HORSE</span>
+                <span className="font-pixel text-[7px] text-derby-yellow">
+                  {Math.round((myHorseState.position / FINISH) * 100)}%
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* BUTTON PANEL — below track for interactive modes */}
+          {(mode === "kids" || mode === "adult") && gameState === "racing" && (
+            <div className="flex-1 bg-[#08081a] border-t-4 border-derby-navy flex flex-col items-center justify-center px-4 py-3 gap-2 flex-shrink-0">
+              <p className="font-pixel text-[8px] text-gray-500 mb-1">
+                {mode === "kids" ? "TAP THE LIGHT · MOVE YOUR HORSE" : `TAP FAST! · ${hits} HITS`}
+              </p>
+              <div
+                className="grid gap-3"
+                style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gridTemplateRows: `repeat(${rows}, 1fr)` }}
               >
-                ⚡ KICK! ⚡
-              </button>
+                {Array.from({ length: buttonCount }, (_, idx) => {
+                  const isLit = litButtons.has(idx);
+                  return (
+                    <button
+                      key={idx}
+                      onPointerDown={() => handleButtonTap(idx)}
+                      className="rounded-full border-4 flex items-center justify-center pixel-btn select-none"
+                      style={{
+                        width: mode === "adult" ? "clamp(44px,10vw,64px)" : "clamp(52px,13vw,80px)",
+                        height: mode === "adult" ? "clamp(44px,10vw,64px)" : "clamp(52px,13vw,80px)",
+                        backgroundColor: isLit ? "#f4d03f" : "#1a1a2e",
+                        borderColor: isLit ? "#ffffff" : "#444",
+                        boxShadow: isLit
+                          ? "0 0 12px #f4d03f, 0 0 24px #f4d03f, 4px 4px 0 #000"
+                          : "2px 2px 0 #000",
+                        transition: "background-color 0.05s, box-shadow 0.05s",
+                      }}
+                    />
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {/* Adult mode score */}
-          {mode === "adult" && gameState === "racing" && (
-            <div className="fixed top-16 right-4 z-40 border-4 border-derby-red bg-[#1a0505] px-4 py-2 text-center">
-              <p className="font-pixel text-derby-red text-[9px]">TAPS</p>
-              <p className="font-pixel text-white text-base">{score}</p>
-            </div>
-          )}
-
-          {/* Passive info bar */}
+          {/* Passive mode bottom bar */}
           {mode === "passive" && gameState === "racing" && myHorseState && (
-            <div className="fixed bottom-0 left-0 right-0 z-40 bg-derby-navy border-t-4 border-derby-gold px-4 py-2 text-center">
+            <div className="flex-shrink-0 bg-derby-navy border-t-4 border-derby-gold px-4 py-2 text-center">
               <span className="font-arcade text-derby-tan text-xl">
-                Your horse {myPick} is at{" "}
-              </span>
-              <span className="font-pixel text-derby-yellow text-xs">
-                {Math.round((myHorseState.position / FINISH) * 100)}%
+                {myPick} — {Math.round((myHorseState.position / FINISH) * 100)}% of the way there
               </span>
             </div>
           )}
@@ -372,38 +368,23 @@ export function RaceGame({ horses, myPick, myName }: Props) {
           <div className="border-4 border-derby-yellow bg-[#0f0f3a] pixel-shadow-yellow p-8 text-center max-w-sm w-full">
             {winner.isMyHorse ? (
               <>
-                <p className="font-pixel text-derby-yellow text-xs leading-8 mb-2">
-                  🏆 YOU WIN!
-                </p>
-                <p className="font-arcade text-white text-2xl mb-1">
-                  {winner.horse.name} wins the race!
-                </p>
-                <p className="font-arcade text-derby-green text-xl mb-6">
-                  {myName}, your pick is a WINNER!
-                </p>
+                <p className="font-pixel text-derby-yellow text-xs leading-8 mb-2">🏆 YOU WIN!</p>
+                <p className="font-arcade text-white text-2xl mb-1">{winner.horse.name} crosses first!</p>
+                <p className="font-arcade text-derby-green text-xl mb-4">{myName}, your pick is a WINNER!</p>
               </>
             ) : (
               <>
-                <p className="font-pixel text-white text-xs leading-8 mb-2">
-                  🏁 RACE OVER
-                </p>
-                <p className="font-arcade text-derby-yellow text-2xl mb-1">
-                  {winner.horse.name} wins!
-                </p>
-                <p className="font-arcade text-gray-400 text-xl mb-6">
+                <p className="font-pixel text-white text-xs leading-8 mb-2">🏁 RACE OVER</p>
+                <p className="font-arcade text-derby-yellow text-2xl mb-1">{winner.horse.name} wins!</p>
+                <p className="font-arcade text-gray-400 text-xl mb-4">
                   Your horse {myPick} didn&apos;t make it this time...
                 </p>
               </>
             )}
-
             <PostBadge horse={winner.horse} size="md" />
-
-            {mode === "adult" && (
-              <p className="font-arcade text-derby-tan text-xl mt-3">
-                You hit {score} targets!
-              </p>
+            {mode !== "passive" && (
+              <p className="font-arcade text-derby-tan text-xl mt-3">You hit {hits} buttons!</p>
             )}
-
             <div className="flex flex-col gap-3 mt-6">
               <button
                 onClick={() => startGame(mode)}
@@ -421,7 +402,7 @@ export function RaceGame({ horses, myPick, myName }: Props) {
                 href="/results"
                 className="border-4 border-derby-tan bg-derby-navy text-derby-tan font-pixel text-[9px] py-3 pixel-shadow pixel-btn inline-block text-center"
               >
-                ← SEE EVERYONE'S PICKS
+                ← SEE EVERYONE&apos;S PICKS
               </a>
             </div>
           </div>
