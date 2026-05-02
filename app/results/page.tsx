@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { hget, hgetall } from "@/lib/kv";
+import { HORSES } from "@/lib/horses";
 import { ResultsBoard } from "@/components/ResultsBoard";
+import { isPicksLocked, getLockDisplay } from "@/lib/lockTime";
 
 export default async function ResultsPage() {
   const cookieStore = await cookies();
@@ -9,11 +11,22 @@ export default async function ResultsPage() {
 
   if (!name) redirect("/");
 
-  // Enforce blind picks: can't see results without having voted
   const myPick = await hget("picks", name);
   if (!myPick) redirect("/pick");
 
-  const allPicksRaw = await hgetall("picks");
+  const [allPicksRaw, scratchData] = await Promise.all([
+    hgetall("picks"),
+    hgetall("scratches"),
+  ]);
+
+  const scratchedSet = new Set(
+    Object.entries(scratchData ?? {})
+      .filter(([, v]) => v === "1")
+      .map(([k]) => k)
+  );
+
+  const horses = HORSES.map((h) => ({ ...h, scratched: scratchedSet.has(h.name) }));
+
   const allPicks = Object.entries(allPicksRaw ?? {}).map(([voter, horse]) => ({
     voter,
     horse,
@@ -22,9 +35,12 @@ export default async function ResultsPage() {
   return (
     <div className="min-h-screen pb-24">
       <ResultsBoard
+        horses={horses}
         initialPicks={allPicks}
         myName={name}
         myHorse={myPick}
+        isLocked={isPicksLocked()}
+        lockDisplay={getLockDisplay()}
       />
     </div>
   );

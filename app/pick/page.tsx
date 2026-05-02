@@ -1,9 +1,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { hget } from "@/lib/kv";
+import { hget, hgetall } from "@/lib/kv";
 import { HORSES } from "@/lib/horses";
 import { fetchLiveOdds } from "@/lib/odds";
 import { PickGrid } from "@/components/PickGrid";
+import { isPicksLocked, getLockDisplay } from "@/lib/lockTime";
 
 export default async function PickPage() {
   const cookieStore = await cookies();
@@ -11,15 +12,36 @@ export default async function PickPage() {
 
   if (!name) redirect("/");
 
-  // Already picked → go to results
-  const existingPick = await hget("picks", name);
-  if (existingPick) redirect("/results");
+  const locked = isPicksLocked();
+  if (locked) redirect("/results");
 
-  const oddsMap = await fetchLiveOdds();
+  const [existingPick, scratchData, oddsMap] = await Promise.all([
+    hget("picks", name),
+    hgetall("scratches"),
+    fetchLiveOdds(),
+  ]);
+
+  const scratchedSet = new Set(
+    Object.entries(scratchData ?? {})
+      .filter(([, v]) => v === "1")
+      .map(([k]) => k)
+  );
+
+  const horses = HORSES.map((h) => ({
+    ...h,
+    scratched: scratchedSet.has(h.name),
+  }));
 
   return (
     <div className="min-h-screen">
-      <PickGrid horses={HORSES} oddsMap={oddsMap} pickerName={name} />
+      <PickGrid
+        horses={horses}
+        oddsMap={oddsMap}
+        pickerName={name}
+        existingPick={existingPick ?? null}
+        isLocked={locked}
+        lockDisplay={getLockDisplay()}
+      />
     </div>
   );
 }

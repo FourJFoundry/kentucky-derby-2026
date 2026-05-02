@@ -4,10 +4,15 @@ export type Horse = {
   jockey: string;
   trainer: string;
   odds: string;
-  oddsNum: number; // numeric morning-line for tier coloring
+  oddsNum: number;
   fact: string;
-  postColor: string; // bg color for post badge
-  postTextDark: boolean; // true if badge needs dark text
+  postColor: string;
+  postColorSecondary?: string;
+  postColorPattern?: "solid" | "diagonal" | "halves";
+  postTextDark: boolean;
+  coatColor: string;
+  coatType: string;
+  scratched?: boolean;
 };
 
 export const HORSES: Horse[] = [
@@ -19,8 +24,10 @@ export const HORSES: Horse[] = [
     odds: "4-1",
     oddsNum: 4,
     fact: "The favorite drew the worst gate — post 1. But trainer Pletcher has conquered it before.",
-    postColor: "#c0392b",
+    postColor: "#CC0000",
     postTextDark: false,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
   {
     post: 2,
@@ -30,8 +37,10 @@ export const HORSES: Horse[] = [
     odds: "30-1",
     oddsNum: 30,
     fact: "Shares a barn with Incredibolt — trainer Riley Mott swings two shots at glory today.",
-    postColor: "#ecf0f1",
+    postColor: "#FFFFFF",
     postTextDark: true,
+    coatColor: "#BEBEBE",
+    coatType: "Gray",
   },
   {
     post: 3,
@@ -41,8 +50,10 @@ export const HORSES: Horse[] = [
     odds: "55-1",
     oddsNum: 55,
     fact: "A West Coast long shot who surprised everyone just by making the field.",
-    postColor: "#2980b9",
+    postColor: "#0000CC",
     postTextDark: false,
+    coatColor: "#CD853F",
+    coatType: "Chestnut",
   },
   {
     post: 4,
@@ -52,8 +63,10 @@ export const HORSES: Horse[] = [
     odds: "34-1",
     oddsNum: 34,
     fact: "Trained by the legendary Bob Baffert, who has more Derby wins than almost anyone alive.",
-    postColor: "#f1c40f",
+    postColor: "#FFDD00",
     postTextDark: true,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
   {
     post: 5,
@@ -63,8 +76,10 @@ export const HORSES: Horse[] = [
     odds: "30-1",
     oddsNum: 30,
     fact: "Named after a type of coffee — earned his spot when Right to Party scratched late.",
-    postColor: "#27ae60",
+    postColor: "#006400",
     postTextDark: false,
+    coatColor: "#CD853F",
+    coatType: "Chestnut",
   },
   {
     post: 6,
@@ -74,8 +89,10 @@ export const HORSES: Horse[] = [
     odds: "7-1",
     oddsNum: 7,
     fact: "Brad Cox also sends Further Ado (post 18) — even the trainer has to pick a favorite!",
-    postColor: "#2c3e50",
+    postColor: "#111111",
     postTextDark: false,
+    coatColor: "#CD853F",
+    coatType: "Chestnut",
   },
   {
     post: 7,
@@ -85,8 +102,10 @@ export const HORSES: Horse[] = [
     odds: "20-1",
     oddsNum: 20,
     fact: "Japan's best chance at Derby glory — the Danon connections have been dreaming of this since 2018.",
-    postColor: "#e67e22",
+    postColor: "#FF6600",
     postTextDark: false,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
   {
     post: 8,
@@ -96,8 +115,10 @@ export const HORSES: Horse[] = [
     odds: "15-1",
     oddsNum: 15,
     fact: "Hall of Famer Mike Smith rides — he won the 2018 Derby on Justify. Can lightning strike twice?",
-    postColor: "#e91e63",
+    postColor: "#FF1493",
     postTextDark: false,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
   {
     post: 9,
@@ -107,8 +128,10 @@ export const HORSES: Horse[] = [
     odds: "10-1",
     oddsNum: 10,
     fact: "Unbeaten at Churchill Downs — two workouts at the track have him razor sharp.",
-    postColor: "#1abc9c",
+    postColor: "#00CED1",
     postTextDark: false,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
   {
     post: 10,
@@ -118,8 +141,10 @@ export const HORSES: Horse[] = [
     odds: "30-1",
     oddsNum: 30,
     fact: "Japan's second entry, owned by a syndicate that includes a famous J-pop idol.",
-    postColor: "#9b59b6",
+    postColor: "#800080",
     postTextDark: false,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
   {
     post: 11,
@@ -129,8 +154,10 @@ export const HORSES: Horse[] = [
     odds: "20-1",
     oddsNum: 20,
     fact: "Stablemate of Albus — trainer Riley Mott has two tickets in today's lottery.",
-    postColor: "#95a5a6",
+    postColor: "#808080",
     postTextDark: false,
+    coatColor: "#4A2C0A",
+    coatType: "Dark Bay",
   },
   {
     post: 12,
@@ -140,8 +167,10 @@ export const HORSES: Horse[] = [
     odds: "8-1",
     oddsNum: 8,
     fact: "The Ball family's first Derby horse in 55 years — trained by Hall of Famer Bill Mott.",
-    postColor: "#6ab187",
+    postColor: "#228B22",
     postTextDark: false,
+    coatColor: "#9E9E9E",
+    coatType: "Gray",
   },
   {
     post: 13,
@@ -151,8 +180,10 @@ export const HORSES: Horse[] = [
     odds: "50-1",
     oddsNum: 50,
     fact: "Crept into the field when Silent Tactic scratched — a total wild card with nothing to lose.",
-    postColor: "#d4a574",
+    postColor: "#D2B48C",
     postTextDark: true,
+    coatColor: "#E0E0E0",
+    coatType: "Gray",
   },
   {
     post: 14,
@@ -162,8 +193,10 @@ export const HORSES: Horse[] = [
     odds: "20-1",
     oddsNum: 20,
     fact: "Baffert's second gun — been clocking some of the fastest workouts at Churchill Downs.",
-    postColor: "#3d8b3d",
-    postTextDark: false,
+    postColor: "#9ACD32",
+    postTextDark: true,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
   {
     post: 15,
@@ -173,8 +206,10 @@ export const HORSES: Horse[] = [
     odds: "15-1",
     oddsNum: 15,
     fact: "Chad Brown is one of the best trainers in the business — pointed at this race all year.",
-    postColor: "#8e44ad",
+    postColor: "#8B4513",
     postTextDark: false,
+    coatColor: "#BEBEBE",
+    coatType: "Gray",
   },
   {
     post: 16,
@@ -184,8 +219,12 @@ export const HORSES: Horse[] = [
     odds: "30-1",
     oddsNum: 30,
     fact: "O'Neill won the 2012 Derby with I'll Have Another. This chestnut hopes to ring the bell again.",
-    postColor: "#607d8b",
+    postColor: "#CC0000",
+    postColorSecondary: "#0000CC",
+    postColorPattern: "diagonal",
     postTextDark: false,
+    coatColor: "#CD853F",
+    coatType: "Chestnut",
   },
   {
     post: 17,
@@ -195,8 +234,12 @@ export const HORSES: Horse[] = [
     odds: "50-1",
     oddsNum: 50,
     fact: "Pure speed from gate to wire — the question is whether he can last the full 1¼ miles.",
-    postColor: "#cddc39",
-    postTextDark: true,
+    postColor: "#FFFFFF",
+    postColorSecondary: "#111111",
+    postColorPattern: "diagonal",
+    postTextDark: false,
+    coatColor: "#5C3317",
+    coatType: "Dark Bay",
   },
   {
     post: 18,
@@ -206,8 +249,12 @@ export const HORSES: Horse[] = [
     odds: "6-1",
     oddsNum: 6,
     fact: "Won the Bluegrass Stakes and is Brad Cox's top choice despite drawing the tough outside post.",
-    postColor: "#c0392b",
-    postTextDark: false,
+    postColor: "#FFDD00",
+    postColorSecondary: "#006400",
+    postColorPattern: "halves",
+    postTextDark: true,
+    coatColor: "#5C3317",
+    coatType: "Dark Bay",
   },
   {
     post: 19,
@@ -217,8 +264,10 @@ export const HORSES: Horse[] = [
     odds: "30-1",
     oddsNum: 30,
     fact: "Trained by one of racing's rare female trainers — quietly improving all spring.",
-    postColor: "#1a237e",
+    postColor: "#ADD8E6",
     postTextDark: false,
+    coatColor: "#CD853F",
+    coatType: "Chestnut",
   },
   {
     post: 20,
@@ -228,8 +277,12 @@ export const HORSES: Horse[] = [
     odds: "50-1",
     oddsNum: 50,
     fact: "Named after the simple eyes of butterflies — a last-second alternate with a beautiful story.",
-    postColor: "#546e7a",
+    postColor: "#001F5B",
+    postColorSecondary: "#FFD700",
+    postColorPattern: "halves",
     postTextDark: false,
+    coatColor: "#8B4513",
+    coatType: "Bay",
   },
 ];
 

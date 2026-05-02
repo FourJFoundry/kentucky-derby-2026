@@ -75,12 +75,67 @@ body::before {
   display: inline-block;
 }
 
-/* Horse gallop across landing page */
-@keyframes gallop {
-  0%   { transform: translateX(-8rem) scaleX(1); }
-  100% { transform: translateX(calc(100vw + 8rem)) scaleX(1); }
+/* Horse gallop across landing page — carnival spurt style, scaleX(-1) flips emoji to face right */
+@keyframes gallop-1 {
+  0%   { transform: translateX(-8rem) scaleX(-1); }
+  12%  { transform: translateX(15vw) scaleX(-1); }
+  22%  { transform: translateX(18vw) scaleX(-1); }
+  40%  { transform: translateX(48vw) scaleX(-1); }
+  52%  { transform: translateX(51vw) scaleX(-1); }
+  68%  { transform: translateX(75vw) scaleX(-1); }
+  78%  { transform: translateX(77vw) scaleX(-1); }
+  100% { transform: translateX(calc(100vw + 8rem)) scaleX(-1); }
 }
-.horse-gallop {
-  animation: gallop linear infinite;
-  display: inline-block;
+@keyframes gallop-2 {
+  0%   { transform: translateX(-8rem) scaleX(-1); }
+  8%   { transform: translateX(20vw) scaleX(-1); }
+  20%  { transform: translateX(22vw) scaleX(-1); }
+  35%  { transform: translateX(42vw) scaleX(-1); }
+  45%  { transform: translateX(44vw) scaleX(-1); }
+  62%  { transform: translateX(70vw) scaleX(-1); }
+  72%  { transform: translateX(72vw) scaleX(-1); }
+  100% { transform: translateX(calc(100vw + 8rem)) scaleX(-1); }
 }
+@keyframes gallop-3 {
+  0%   { transform: translateX(-8rem) scaleX(-1); }
+  18%  { transform: translateX(10vw) scaleX(-1); }
+  28%  { transform: translateX(13vw) scaleX(-1); }
+  48%  { transform: translateX(52vw) scaleX(-1); }
+  56%  { transform: translateX(54vw) scaleX(-1); }
+  74%  { transform: translateX(82vw) scaleX(-1); }
+  82%  { transform: translateX(83vw) scaleX(-1); }
+  100% { transform: translateX(calc(100vw + 8rem)) scaleX(-1); }
+}
+@keyframes gallop-4 {
+  0%   { transform: translateX(-8rem) scaleX(-1); }
+  6%   { transform: translateX(12vw) scaleX(-1); }
+  14%  { transform: translateX(14vw) scaleX(-1); }
+  30%  { transform: translateX(35vw) scaleX(-1); }
+  38%  { transform: translateX(37vw) scaleX(-1); }
+  55%  { transform: translateX(60vw) scaleX(-1); }
+  63%  { transform: translateX(61vw) scaleX(-1); }
+  80%  { transform: translateX(88vw) scaleX(-1); }
+  88%  { transform: translateX(89vw) scaleX(-1); }
+  100% { transform: translateX(calc(100vw + 8rem)) scaleX(-1); }
+}
+@keyframes gallop-5 {
+  0%   { transform: translateX(-8rem) scaleX(-1); }
+  14%  { transform: translateX(8vw) scaleX(-1); }
+  24%  { transform: translateX(11vw) scaleX(-1); }
+  44%  { transform: translateX(45vw) scaleX(-1); }
+  54%  { transform: translateX(47vw) scaleX(-1); }
+  70%  { transform: translateX(78vw) scaleX(-1); }
+  80%  { transform: translateX(80vw) scaleX(-1); }
+  100% { transform: translateX(calc(100vw + 8rem)) scaleX(-1); }
+}
+/* Adult race mode tap targets */
+@keyframes target-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  50%       { transform: translate(-50%, -50%) scale(1.15); opacity: 0.85; }
+}
+
+.horse-gallop-1 { display: inline-block; animation: gallop-1 10s linear infinite; }
+.horse-gallop-2 { display: inline-block; animation: gallop-2 10s linear infinite; }
+.horse-gallop-3 { display: inline-block; animation: gallop-3 10s linear infinite; }
+.horse-gallop-4 { display: inline-block; animation: gallop-4 10s linear infinite; }
+.horse-gallop-5 { display: inline-block; animation: gallop-5 10s linear infinite; }
