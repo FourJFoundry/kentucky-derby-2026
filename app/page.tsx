@@ -1,65 +1,67 @@
-import Image from "next/image";
+import { setName } from "./actions";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative">
+      {/* Main card */}
+      <div className="w-full max-w-md border-4 border-derby-yellow bg-[#0f0f3a] pixel-shadow-yellow p-8 text-center">
+        {/* Horse emoji big */}
+        <div className="text-6xl mb-4">🏇</div>
+
+        <h1 className="font-pixel text-derby-yellow text-sm sm:text-base leading-8 mb-2">
+          KENTUCKY DERBY
+        </h1>
+        <p className="font-pixel text-white text-xs leading-8 mb-6">
+          2026 · PICK YOUR WINNER
+        </p>
+
+        <p className="font-arcade text-derby-tan text-2xl mb-8 leading-7">
+          20 horses · 1 race · 1 pick
+          <br />
+          Who do YOU think wins?
+        </p>
+
+        <form action={setName} className="flex flex-col gap-4">
+          <label className="font-arcade text-white text-xl text-left">
+            Enter your name to start:
+          </label>
+          <input
+            name="name"
+            type="text"
+            required
+            minLength={2}
+            maxLength={30}
+            placeholder="Your name..."
+            autoFocus
+            className="border-4 border-white bg-derby-navy text-white font-arcade text-2xl px-4 py-3 placeholder-gray-500 focus:outline-none focus:border-derby-yellow pixel-shadow w-full"
+          />
+          <button
+            type="submit"
+            className="border-4 border-derby-yellow bg-derby-red text-white font-pixel text-xs py-4 pixel-shadow-yellow pixel-btn mt-2 w-full"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            LET&apos;S RACE →
+          </button>
+        </form>
+      </div>
+
+      {/* Galloping horses strip */}
+      <div className="fixed bottom-0 left-0 right-0 overflow-hidden h-16 pointer-events-none">
+        <div className="absolute bottom-2 left-0 right-0 flex gap-0">
+          {[3, 6, 10, 14, 18].map((delay, i) => (
+            <span
+              key={i}
+              className="horse-gallop text-4xl absolute"
+              style={{
+                animationDuration: `${8 + i * 2}s`,
+                animationDelay: `${delay}s`,
+                bottom: `${4 + (i % 3) * 8}px`,
+              }}
+            >
+              🏇
+            </span>
+          ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

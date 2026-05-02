@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a2e;
+  --foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-pixel: var(--font-press-start);
+  --font-arcade: var(--font-vt323);
+  --color-derby-navy: #0a0a2e;
+  --color-derby-red: #e63946;
+  --color-derby-yellow: #f4d03f;
+  --color-derby-green: #2ecc71;
+  --color-derby-tan: #c19a6b;
+  --color-derby-gold: #ffd700;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+/* Pixel grid background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Pixel shadow utilities */
+.pixel-shadow {
+  box-shadow: 4px 4px 0px #000000;
+}
+.pixel-shadow-yellow {
+  box-shadow: 4px 4px 0px #f4d03f;
+}
+.pixel-shadow-green {
+  box-shadow: 4px 4px 0px #2ecc71;
+}
+
+/* Pixel button press effect */
+.pixel-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+/* Pulsing green border for selected card */
+@keyframes pixel-pulse {
+  0%, 100% { border-color: #2ecc71; box-shadow: 4px 4px 0px #2ecc71; }
+  50%       { border-color: #ffffff; box-shadow: 4px 4px 0px #ffffff; }
+}
+.selected-card {
+  animation: pixel-pulse 1s ease-in-out infinite;
+}
+
+/* Ticker marquee */
+@keyframes ticker {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+.ticker-inner {
+  animation: ticker 22s linear infinite;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* Horse gallop across landing page */
+@keyframes gallop {
+  0%   { transform: translateX(-8rem) scaleX(1); }
+  100% { transform: translateX(calc(100vw + 8rem)) scaleX(1); }
+}
+.horse-gallop {
+  animation: gallop linear infinite;
+  display: inline-block;
 }
