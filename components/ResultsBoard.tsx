@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { switchPicker } from "@/app/actions";
 import { Horse } from "@/lib/horses";
 import { PostBadge } from "./PostBadge";
 import { useCountdown } from "@/lib/useCountdown";
@@ -14,11 +15,13 @@ type Props = {
   myHorse: string;
   isLocked: boolean;
   lockDisplay: string;
+  sessionNames: string[];
 };
 
-export function ResultsBoard({ horses, initialPicks, myName, myHorse, isLocked, lockDisplay }: Props) {
+export function ResultsBoard({ horses, initialPicks, myName, myHorse, isLocked, lockDisplay, sessionNames }: Props) {
   const [picks, setPicks] = useState<PickEntry[]>(initialPicks);
   const [, startTransition] = useTransition();
+  const [activeVoter, setActiveVoter] = useState<string | null>(null);
   const { text: countdownText, locked: nowLocked } = useCountdown();
   const locked = isLocked || nowLocked;
 
@@ -141,24 +144,32 @@ export function ResultsBoard({ horses, initialPicks, myName, myHorse, isLocked, 
 
                 {/* Voters list below gate */}
                 <div className="w-full mt-2 flex flex-col gap-1 items-center min-h-[2rem]">
-                  {voters.map((voter) => (
-                    <div
-                      key={voter}
-                      className={[
-                        "w-full text-center px-1 py-0.5 border-2",
-                        voter === myName
-                          ? "border-derby-gold bg-[#1a1a00] text-derby-yellow"
-                          : "border-derby-red bg-[#1a0a0a] text-white",
-                      ].join(" ")}
-                    >
-                      <span className="font-pixel text-[8px] leading-4">{voter}</span>
-                      {voter === myName && (
-                        <span className="ml-1 bg-derby-gold text-black font-pixel text-[7px] px-1">
-                          YOU
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                  {voters.map((voter) => {
+                    const isSession = sessionNames.includes(voter);
+                    return (
+                      <div
+                        key={voter}
+                        onClick={isSession ? () => setActiveVoter(voter) : undefined}
+                        className={[
+                          "w-full text-center px-1 py-0.5 border-2",
+                          voter === myName
+                            ? "border-derby-gold bg-[#1a1a00] text-derby-yellow"
+                            : "border-derby-red bg-[#1a0a0a] text-white",
+                          isSession ? "cursor-pointer active:opacity-60" : "",
+                        ].join(" ")}
+                      >
+                        <span className="font-pixel text-[8px] leading-4">{voter}</span>
+                        {voter === myName && (
+                          <span className="ml-1 bg-derby-gold text-black font-pixel text-[7px] px-1">
+                            YOU
+                          </span>
+                        )}
+                        {isSession && (
+                          <span className="ml-1 font-pixel text-[6px] text-gray-400">✏</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -166,7 +177,7 @@ export function ResultsBoard({ horses, initialPicks, myName, myHorse, isLocked, 
         </div>
       </div>
 
-      {/* Fixed bottom bar */}
+      {/* Fixed bottom bar — current user's pick info */}
       <div className="fixed bottom-0 left-0 right-0 z-20 bg-derby-navy border-t-4 border-derby-gold">
         <div className="max-w-4xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -177,29 +188,56 @@ export function ResultsBoard({ horses, initialPicks, myName, myHorse, isLocked, 
             </span>
           </div>
           {!locked && (
-            <div className="flex gap-3">
-              <a
-                href="/pick"
-                className="border-4 border-derby-yellow bg-derby-red text-white font-pixel text-[9px] px-4 py-2 pixel-shadow-yellow pixel-btn inline-block"
-              >
-                CHANGE MY PICK
-              </a>
-              <a
-                href="/"
-                className="border-4 border-derby-tan bg-derby-navy text-derby-tan font-pixel text-[9px] px-4 py-2 pixel-shadow pixel-btn inline-block"
-              >
-                + SOMEONE ELSE
-              </a>
-            </div>
+            <a
+              href="/pick"
+              className="border-4 border-derby-yellow bg-derby-red text-white font-pixel text-[9px] px-4 py-2 pixel-shadow-yellow pixel-btn inline-block"
+            >
+              CHANGE MY PICK
+            </a>
           )}
-          <a
-            href="/race"
-            className="border-4 border-derby-green bg-[#0a1a0a] text-derby-green font-pixel text-[9px] px-4 py-2 pixel-shadow pixel-btn inline-block"
-          >
-            🏁 RACE GAME
-          </a>
         </div>
       </div>
+
+      {/* Bottom sheet — session voter actions */}
+      {activeVoter && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          onClick={() => setActiveVoter(null)}
+        >
+          <div
+            className="w-full max-w-md bg-derby-navy border-t-4 border-derby-gold p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-pixel text-derby-yellow text-[9px] leading-6 mb-4">
+              {activeVoter}
+            </p>
+            <div className="flex flex-col gap-3">
+              <form action={switchPicker}>
+                <input type="hidden" name="name" value={activeVoter} />
+                <button
+                  type="submit"
+                  className="w-full border-4 border-derby-yellow bg-derby-red text-white font-pixel text-[9px] py-3 pixel-shadow-yellow pixel-btn"
+                >
+                  CHANGE PICK →
+                </button>
+              </form>
+              <a
+                href={`/rename?name=${encodeURIComponent(activeVoter)}`}
+                className="block w-full border-4 border-gray-500 bg-[#1a1a1a] text-gray-300 font-pixel text-[9px] py-3 pixel-shadow pixel-btn text-center"
+              >
+                RENAME ✏
+              </a>
+              <button
+                onClick={() => setActiveVoter(null)}
+                className="w-full border-4 border-gray-700 bg-transparent text-gray-500 font-pixel text-[9px] py-3 pixel-btn"
+              >
+                CANCEL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

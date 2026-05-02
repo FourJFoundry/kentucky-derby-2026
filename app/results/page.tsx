@@ -11,6 +11,13 @@ export default async function ResultsPage() {
 
   if (!name) redirect("/");
 
+  let sessionNames: string[] = [];
+  try {
+    sessionNames = JSON.parse(cookieStore.get("derby_session")?.value ?? "[]");
+  } catch {
+    sessionNames = [];
+  }
+
   const myPick = await hget("picks", name);
   if (!myPick) redirect("/pick");
 
@@ -41,6 +48,7 @@ export default async function ResultsPage() {
         myHorse={myPick}
         isLocked={isPicksLocked()}
         lockDisplay={getLockDisplay()}
+        sessionNames={sessionNames}
       />
     </div>
   );
