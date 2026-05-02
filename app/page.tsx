@@ -49,7 +49,7 @@ export default async function Home() {
         {/* Name entry form */}
         <form action={setName} className="flex flex-col gap-4">
           <label className="font-arcade text-white text-xl text-left">
-            {existingName ? "Pick for someone else:" : "Enter your name to start:"}
+            {existingName ? "Change your name or pick for someone else:" : "Enter your name to start:"}
           </label>
           <input
             name="name"
@@ -58,6 +58,7 @@ export default async function Home() {
             minLength={2}
             maxLength={30}
             placeholder="Your name..."
+            defaultValue={existingName ?? ""}
             autoFocus={!existingName}
             className="border-4 border-white bg-derby-navy text-white font-arcade text-2xl px-4 py-3 placeholder-gray-500 focus:outline-none focus:border-derby-yellow pixel-shadow w-full"
           />
@@ -65,7 +66,7 @@ export default async function Home() {
             type="submit"
             className="border-4 border-derby-yellow bg-derby-red text-white font-pixel text-xs py-4 pixel-shadow-yellow pixel-btn mt-2 w-full"
           >
-            {existingName ? "PICK FOR THEM →" : "LET'S RACE →"}
+            {existingName ? "GO →" : "LET'S RACE →"}
           </button>
         </form>
       </div>
