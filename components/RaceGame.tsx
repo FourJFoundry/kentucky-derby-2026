@@ -24,7 +24,7 @@ const ADULT_BUTTONS = 12;
 
 // How long a lit button stays visible (ms)
 const KIDS_WINDOW = 1100;
-const ADULT_WINDOW = 520;
+const ADULT_WINDOW = 702;
 
 // How often a new button lights up (ms)
 const KIDS_SPAWN = 750;
