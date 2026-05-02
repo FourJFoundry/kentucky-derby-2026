@@ -29,7 +29,7 @@ export default async function PickPage() {
 
   const horses = HORSES.map((h) => ({
     ...h,
-    scratched: scratchedSet.has(h.name),
+    scratched: h.scratched || scratchedSet.has(h.name),
   }));
 
   return (

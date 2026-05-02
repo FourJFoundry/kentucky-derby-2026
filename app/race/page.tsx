@@ -23,7 +23,7 @@ export default async function RacePage() {
       .map(([k]) => k)
   );
 
-  const horses = HORSES.filter((h) => !scratchedSet.has(h.name));
+  const horses = HORSES.filter((h) => !h.scratched && !scratchedSet.has(h.name));
 
   return (
     <div className="min-h-screen">

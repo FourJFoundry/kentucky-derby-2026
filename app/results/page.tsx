@@ -32,7 +32,7 @@ export default async function ResultsPage() {
       .map(([k]) => k)
   );
 
-  const horses = HORSES.map((h) => ({ ...h, scratched: scratchedSet.has(h.name) }));
+  const horses = HORSES.map((h) => ({ ...h, scratched: h.scratched || scratchedSet.has(h.name) }));
 
   const allPicks = Object.entries(allPicksRaw ?? {}).map(([voter, horse]) => ({
     voter,
