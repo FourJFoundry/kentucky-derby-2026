@@ -1,6 +1,7 @@
 import { HORSES } from "@/lib/horses";
 import { hgetall } from "@/lib/kv";
 import { setScratch } from "./actions";
+import { clearAllPicks } from "@/app/actions";
 import { PostBadge } from "@/components/PostBadge";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,21 @@ export default async function AdminPage() {
             </form>
           );
         })}
+      </div>
+
+      <div className="mt-10 border-4 border-derby-red bg-[#1a0505] p-6 text-center">
+        <p className="font-pixel text-derby-red text-[10px] leading-6 mb-2">⚠ DANGER ZONE</p>
+        <p className="font-arcade text-gray-300 text-xl mb-4">
+          Remove all picks from the database. Cannot be undone.
+        </p>
+        <form action={clearAllPicks}>
+          <button
+            type="submit"
+            className="border-4 border-derby-red bg-black text-derby-red font-pixel text-[10px] px-6 py-3 pixel-btn pixel-shadow"
+          >
+            🗑 CLEAR ALL PICKS
+          </button>
+        </form>
       </div>
 
       <p className="font-arcade text-gray-500 text-lg text-center mt-8">

@@ -64,6 +64,17 @@ export async function hgetall(
   return kv.hgetall<Record<string, string>>(key);
 }
 
+export async function deleteKey(key: string): Promise<void> {
+  if (!isKvConfigured()) {
+    const all = readLocal();
+    delete all[key];
+    writeLocal(all);
+    return;
+  }
+  const { kv } = await import("@vercel/kv");
+  await kv.del(key);
+}
+
 export async function hdel(key: string, field: string): Promise<void> {
   if (!isKvConfigured()) {
     const all = readLocal();

@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/", label: "ADD PICKER", icon: "🏠" },
+  { href: "/", label: "MAKE A PICK", icon: "🏠" },
   { href: "/results", label: "STARTING GATE", icon: "🏟" },
   { href: "/race", label: "RACE GAME", icon: "🏁" },
 ];
@@ -19,14 +19,14 @@ export function NavBar() {
             key={item.href}
             href={item.href}
             className={[
-              "flex-1 flex flex-col items-center justify-center py-2 gap-0.5 border-r-2 border-gray-700 last:border-0",
+              "flex-1 flex flex-col items-center justify-center py-3 gap-1 border-r-4 last:border-0",
               active
-                ? "bg-[#0a0a2a] text-derby-yellow"
-                : "text-gray-400",
+                ? "bg-[#0a0a2a] border-r-gray-700 border-b-4 border-b-derby-yellow text-derby-yellow"
+                : "border-r-gray-700 text-gray-400",
             ].join(" ")}
           >
-            <span className="text-lg leading-none">{item.icon}</span>
-            <span className="font-pixel text-[7px] leading-none">{item.label}</span>
+            <span className="text-3xl leading-none">{item.icon}</span>
+            <span className="font-arcade text-2xl leading-none">{item.label}</span>
           </a>
         );
       })}

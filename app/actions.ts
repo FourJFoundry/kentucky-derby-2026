@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { hget, hset, hdel } from "@/lib/kv";
+import { hget, hset, hdel, deleteKey } from "@/lib/kv";
 import { isPicksLocked } from "@/lib/lockTime";
 
 // Read session list from cookie (names entered on this device)
@@ -110,6 +110,11 @@ export async function submitPick(horseName: string) {
   if (!name) redirect("/");
   await hset("picks", name, horseName);
   redirect("/results");
+}
+
+export async function clearAllPicks() {
+  await deleteKey("picks");
+  redirect("/admin");
 }
 
 export async function changePick(horseName: string) {

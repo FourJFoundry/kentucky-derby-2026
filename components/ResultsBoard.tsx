@@ -130,11 +130,11 @@ export function ResultsBoard({ horses, initialPicks, myName, myHorse, isLocked, 
                   </div>
 
                   {/* Horse name */}
-                  <div className="bg-[#0a0a1a] px-1 py-2 text-center min-h-[3rem] flex items-center justify-center">
+                  <div className="bg-[#0a0a1a] px-1 py-2 text-center min-h-[5rem] flex items-center justify-center">
                     <p
                       className={[
-                        "font-pixel leading-4",
-                        iMyPick ? "text-derby-yellow text-[8px]" : "text-gray-300 text-[7px]",
+                        "font-pixel leading-5",
+                        iMyPick ? "text-derby-yellow text-[16px]" : "text-gray-300 text-[14px]",
                       ].join(" ")}
                     >
                       {horse.name}
@@ -165,7 +165,7 @@ export function ResultsBoard({ horses, initialPicks, myName, myHorse, isLocked, 
                           </span>
                         )}
                         {isSession && (
-                          <span className="ml-1 font-pixel text-[6px] text-gray-400">✏</span>
+                          <span className="ml-1 bg-derby-yellow text-black font-pixel text-[8px] px-1 py-0.5">✏</span>
                         )}
                       </div>
                     );
